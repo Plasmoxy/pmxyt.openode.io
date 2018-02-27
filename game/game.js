@@ -1,20 +1,34 @@
-
+var urlParams = new URLSearchParams(window.location.search);
 var bounds;
-var mainPlayer;
-var p2;
+
+var seb;
+var filip;
 
 var socket = io.connect('https://pmxyt.fr.openode.io', { transports: ['websocket']});
 
-function Player() {
+function Player(red, green, blue) {
   this.x = 0;
   this.y = 0;
   this.draw = function() {
+    fill(red, green, blue);
     ellipse(this.x, this.y, 30, 30);
   };
 }
 
 function bbg() {
   background(16, 16, 16);
+}
+
+function tick() {
+  if (pname == 'seb') {
+    seb.x = mouseX;
+    seb.y = mouseY;
+    socket.emit('alpha', 'seb:' + seb.x + ':' + seb.y);
+  } else if (pname == 'filip') {
+    filip.x = mouseX;
+    filip.y = mouseY;
+    socket.emit('alpha', 'filip:' + filip.x + ':' + filip.y);
+  }
 }
 
 function setup() {
@@ -24,24 +38,30 @@ function setup() {
   };
   createCanvas(bounds.w, bounds.h);
   bbg();
-  frameRate(60);
+  frameRate(120);
 
-  mainPlayer = new Player();
-  socket.on('INFO_RETURN', function(msg){
-    console.log(msg);
-  });
-  p2 = new Player();
+  seb = new Player(255, 0, 0);
+  filip = new Player(0, 255, 0);
 
-  socket.on('INFO_RETURN', function(msg){
-    console.log(msg);
+  pname = urlParams.get('name');
+
+  socket.on('alpha', function(msg){
+    var data = msg.split(':');
+    if (data[0] == 'filip' && pname != 'filip') {
+      filip.x = parseInt(data[1]);
+      filip.y = parseInt(data[2]);
+    } else if (data[0] == 'seb' && pname != 'seb') {
+      seb.x = parseInt(data[1]);
+      seb.y = parseInt(data[2]);
+    }
   });
+
+  setInterval(tick, 10);
 
 }
 
 function draw() {
   clear();
-  mainPlayer.x = mouseX;
-  mainPlayer.y = mouseY;
-  mainPlayer.draw();
-  p2.draw();
+  seb.draw();
+  filip.draw();
 }

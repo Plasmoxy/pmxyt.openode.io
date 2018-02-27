@@ -32,23 +32,17 @@ app.get('/', function(req, res) {
   res.sendFile(__dirname + '/game/game.html')
 })
 
+// ??????????????
+app.get('/style.css', function(req, res) {
+  res.sendFile(__dirname + '/game/style.css')
+})
+
 // custom
 
-var players = 0;
-
 io.sockets.on('connection', function(client) {
-  client.on('INFO', function(msg) {
-    if (msg == "addPlayer") {
-      client.emit('INFO_RETURN', ''+players);
-      players++;
-    }
-  })
   client.on('alpha', function(msg) {
-    client.emit('beta', msg);
-  })
-  client.on('beta', function(msg) {
-    client.emit('alpha', msg);
-  })
+    io.emit('alpha', msg);
+  });
 });
 
 // start servers
