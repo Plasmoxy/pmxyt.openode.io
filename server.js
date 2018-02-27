@@ -32,11 +32,26 @@ app.get('/', function(req, res) {
   res.sendFile(__dirname + '/game/game.html')
 })
 
+// custom
+
+var players = 0;
+
 io.sockets.on('connection', function(client) {
+  client.on('INFO', function(msg) {
+    if (msg == "addPlayer") {
+      client.emit('INFO_RETURN', ''+players);
+      players++;
+    }
+  })
   client.on('alpha', function(msg) {
-    //client.emit('alpha', msg);
+    client.emit('beta', msg);
+  })
+  client.on('beta', function(msg) {
+    client.emit('alpha', msg);
   })
 });
+
+// start servers
 
 server.listen(443, function() {
   console.log('https server listening on port 443')
