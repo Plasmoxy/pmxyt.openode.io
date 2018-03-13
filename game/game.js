@@ -1,50 +1,98 @@
+const GAME_SITE = 'https://localhost';
+
 let urlParams = new URLSearchParams(window.location.search);
 
-let seb;
-let filip;
+let socket;
+let player;
+let name;
+let others = [];
 
-let socket = io.connect('https://pmxyt.fr.openode.io', { transports: ['websocket']});
+class Player {
 
-function Player(red, green, blue) {
-  this.x = 0;
-  this.y = 0;
-  this.draw = function() {
-    fill(red, green, blue);
+  constructor(id, x, y) {
+    this.id = id;
+    this.x = x;
+    this.y = y;
+    this.color = [255, 0, 0];
+  }
+
+  draw() {
+    fill(this.color[0], this.color[1], this.color[2]);
     ellipse(this.x, this.y, 30, 30);
   };
+}
+
+class ServerPlayer {
+  constructor(plr) {
+    this.id = plr.id;
+    this.x = plr.x;
+    this.y = plr.y;
+  }
 }
 
 function bbg() {
   background(16, 16, 16);
 }
 
-function tick() {
-  if (pname == 'seb') {
-    socket.emit('alpha', 'seb:' + seb.x + ':' + seb.y);
-  } else if (pname == 'filip') {
-    socket.emit('alpha', 'filip:' + filip.x + ':' + filip.y);
-  }
-}
-
 function setup() {
   createCanvas(windowWidth, windowHeight);
   bbg();
-  frameRate(120);
+  frameRate(60);
 
-  seb = new Player(255, 0, 0);
-  filip = new Player(0, 255, 0);
+  if (urlParams.has('name')) {
+    name = urlParams.get('name');
+  } else {
+    console.log('ERROR: NO NAME PARAM SPECIFIED');
+    return;
+  }
 
-  pname = urlParams.get('name');
+  player = new Player(name, 100, 100);
+  player.color = [255, 0, 0];
 
-  socket.on('alpha', function(msg){
-    let data = msg.split(':');
-    if (data[0] == 'filip' && pname != 'filip') {
-      filip.x = parseInt(data[1]);
-      filip.y = parseInt(data[2]);
-    } else if (data[0] == 'seb' && pname != 'seb') {
-      seb.x = parseInt(data[1]);
-      seb.y = parseInt(data[2]);
-    }
+  console.log('CONNECTING TO GAME SERVER');
+  socket = io.connect(GAME_SITE, { transports: ['websocket']});
+
+  console.log('requesting player creation : ' + name);
+
+  socket.emit('playerconnected', new ServerPlayer(player));
+
+  socket.on('allplayers', function(ps) {
+    console.log(':: ALL SERVERPLAYERS ::');
+    console.log(ps.slice()); // as for console async, copy a new array ref for console log
+
+
+    ps.forEach(function(p,i) {
+      if (p.id == name) ps.splice(i, 1);
+    });
+
+    ps.forEach(function(p,i) {
+      others.push(new Player(p.id, p.x, p.y));
+    });
+
+    console.log(':: OTHERS CLIENTPLAYERS ::');
+    console.log(others);
+
+  });
+
+  socket.on('playerconnected', function(plr) {
+    // ANOTHER PLAYER !
+    console.log('>>> a player has CONNECTED : ' + plr.id);
+
+    others.push(new Player(plr.id, plr.x, plr.y));
+
+    console.log(':: OTHERS CLIENTPLAYERS ::');
+    console.log(others);
+  });
+
+  socket.on('playerdisconnected', function(id) {
+    console.log('>>> a player has DISCONNECTED : ' + id);
+
+    others.forEach(function(p,i) {
+      if (p.id == id) others.splice(i, 1);
+    });
+
+    console.log(':: OTHERS CLIENTPLAYERS ::');
+    console.log(others);
   });
 
 }
@@ -53,23 +101,26 @@ let dt, newtime = 0;
 let oldtime = Date.now();
 
 function draw() {
+  clear();
   newtime = Date.now();
   dt = newtime - oldtime;
 
-  if (dt > 30) {
+  if (dt > 33) { // 30 hz
     oldtime = newtime;
     tick();
   }
 
-  if (pname == 'seb') {
-    seb.x = mouseX;
-    seb.y = mouseY;
-  } else if (pname == 'filip') {
-    filip.x = mouseX;
-    filip.y = mouseY;
-  }
+  player.x = mouseX;
+  player.y = mouseY;
 
-  clear();
-  seb.draw();
-  filip.draw();
+  if (player) player.draw();
+
+  others.forEach(function(p,i) {
+    p.draw();
+  });
+
+}
+
+function tick() {
+
 }
