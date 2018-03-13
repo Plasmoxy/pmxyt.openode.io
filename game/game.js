@@ -1,10 +1,9 @@
-var urlParams = new URLSearchParams(window.location.search);
-var bounds;
+let urlParams = new URLSearchParams(window.location.search);
 
-var seb;
-var filip;
+let seb;
+let filip;
 
-var socket = io.connect('https://pmxyt.fr.openode.io', { transports: ['websocket']});
+let socket = io.connect('https://pmxyt.fr.openode.io', { transports: ['websocket']});
 
 function Player(red, green, blue) {
   this.x = 0;
@@ -21,22 +20,14 @@ function bbg() {
 
 function tick() {
   if (pname == 'seb') {
-    seb.x = mouseX;
-    seb.y = mouseY;
     socket.emit('alpha', 'seb:' + seb.x + ':' + seb.y);
   } else if (pname == 'filip') {
-    filip.x = mouseX;
-    filip.y = mouseY;
     socket.emit('alpha', 'filip:' + filip.x + ':' + filip.y);
   }
 }
 
 function setup() {
-  bounds  = {
-    w: windowWidth-15,
-    h: windowHeight-20
-  };
-  createCanvas(bounds.w, bounds.h);
+  createCanvas(windowWidth, windowHeight);
   bbg();
   frameRate(120);
 
@@ -46,7 +37,7 @@ function setup() {
   pname = urlParams.get('name');
 
   socket.on('alpha', function(msg){
-    var data = msg.split(':');
+    let data = msg.split(':');
     if (data[0] == 'filip' && pname != 'filip') {
       filip.x = parseInt(data[1]);
       filip.y = parseInt(data[2]);
@@ -56,13 +47,28 @@ function setup() {
     }
   });
 
-  setInterval(tick, 100);
-
 }
 
-let dt, timestamp;
+let dt, newtime = 0;
+let oldtime = Date.now();
 
 function draw() {
+  newtime = Date.now();
+  dt = newtime - oldtime;
+
+  if (dt > 30) {
+    oldtime = newtime;
+    tick();
+  }
+
+  if (pname == 'seb') {
+    seb.x = mouseX;
+    seb.y = mouseY;
+  } else if (pname == 'filip') {
+    filip.x = mouseX;
+    filip.y = mouseY;
+  }
+
   clear();
   seb.draw();
   filip.draw();
