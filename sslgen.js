@@ -4,7 +4,7 @@ var fs = require('fs');
 
 app = express();
 
-var server = http.createServer(ssl_options, app);
+var server = http.createServer(app);
 
 // routing
 app.use('/.well-known', express.static(__dirname + '/.well-known', {dotfiles:'allow'}))
