@@ -56,7 +56,7 @@ function setup() {
     }
   });
 
-  setInterval(tick, 10);
+  setInterval(tick, 33);
 
 }
 
