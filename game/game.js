@@ -56,9 +56,11 @@ function setup() {
     }
   });
 
-  setInterval(tick, 33);
+  setInterval(tick, 100);
 
 }
+
+let dt, timestamp;
 
 function draw() {
   clear();
