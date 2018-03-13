@@ -16,5 +16,5 @@ app.get('/', function(req, res) {
 })
 
 server.listen(80, function() {
-  console.log('redirect http server listening on port 80')
+  console.log('http server listening on port 80')
 })
