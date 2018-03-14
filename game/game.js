@@ -29,8 +29,8 @@ class ServerPlayer { // prototype for server player
   }
 
   interpolate(dt) {
-    this.x -= (this.x - this.tx) * dt;
-    this.y -= (this.y - this.ty) * dt;
+    this.x += (this.tx - this.x) * dt;
+    this.y += (this.ty - this.y) * dt;
   }
 
 }
@@ -45,6 +45,8 @@ class Player extends ServerPlayer {
   draw() {
     fill(this.color[0], this.color[1], this.color[2]);
     ellipse(this.x, this.y, 30, 30);
+    textSize(30);
+    text(this.id, this.x - 20, this.y + 50);
   };
 
 }
