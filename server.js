@@ -23,13 +23,20 @@ redirectApp.get('*', function (req, res, next) {
   !req.secure ? res.redirect('https://pmxyt.fr.openode.io' + req.url) : next();
 })
 
-// routing
+// manual routing
+
+// ssl ->
 app.use('/.well-known', express.static(__dirname + '/.well-known', {dotfiles:'allow'}))
 
+// game ->
 app.use('/game', express.static(__dirname + '/game'))
+app.get('/game', function(req, res) {
+  res.sendFile(__dirname + '/game/game.html');
+});
 
+// page ->
 app.get('/', function(req, res) {
-  res.sendFile(__dirname + '/game/game.html')
+  res.sendFile(__dirname + '/index.html')
 })
 
 // ------------
@@ -92,17 +99,21 @@ io.sockets.on('connection', function(socket) {
   });
 
   socket.on('move', function(data) {
-    // send data to update client others state
-    socket.broadcast.emit('othermove', {
-      id: socket.player.id,
-      x: data.x,
-      y: data.y
-    });
 
-    // update server data
+    if (socket.player) {
 
-    socket.player.x = data.x;
-    socket.player.y = data.y;
+      // send data to update other clients
+      socket.broadcast.emit('othermove', {
+        id: socket.player.id,
+        x: data.x,
+        y: data.y
+      });
+
+      // update server data
+      socket.player.x = data.x;
+      socket.player.y = data.y;
+
+    }
 
   });
 

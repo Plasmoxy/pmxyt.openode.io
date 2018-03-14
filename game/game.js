@@ -1,5 +1,6 @@
-const GAME_SITE = '/';
 const DEBUG = true;
+
+const GAME_SITE = '/'; // connect to current url
 
 function debug(obj) {
   DEBUG && console.log(obj);
@@ -12,13 +13,26 @@ let player;
 let name;
 let others = [];
 
+let inter_ratio = 1/4;
+
 
 class ServerPlayer { // prototype for server player
   constructor(obj) {
+    this.id = obj.id;
+
     this.x = obj.x;
     this.y = obj.y;
-    this.id = obj.id;
+
+    // interpolation target xy
+    this.tx = this.x;
+    this.ty = this.y;
   }
+
+  interpolate(dt) {
+    this.x -= (this.x - this.tx) * dt;
+    this.y -= (this.y - this.ty) * dt;
+  }
+
 }
 
 class Player extends ServerPlayer {
@@ -32,6 +46,7 @@ class Player extends ServerPlayer {
     fill(this.color[0], this.color[1], this.color[2]);
     ellipse(this.x, this.y, 30, 30);
   };
+
 }
 
 
@@ -117,8 +132,8 @@ function setup() {
   socket.on('othermove', function(movedata) {
     for (i = 0; i < others.length; i++) {
       if (others[i].id == movedata.id) {
-        others[i].x = movedata.x;
-        others[i].y = movedata.y;
+        others[i].tx = movedata.x; // INTERPOLATION SET !
+        others[i].ty = movedata.y;
         return; // pop the function as we don't need to iterate to remaining players
       }
     }
@@ -134,9 +149,9 @@ function draw() {
   newtime = Date.now();
   dt = newtime - oldtime;
 
-  if (dt > 16) { // 30 hz tick
+  if (dt >= (1000/60)) { // 60 hz tick
     oldtime = newtime;
-    tick();
+    tick(dt);
   }
 
   player.x = mouseX;
@@ -145,11 +160,12 @@ function draw() {
   player.draw();
 
   others.forEach(function(p,i) {
+    p.interpolate(inter_ratio);
     p.draw();
   });
 
 }
 
-function tick() {
+function tick(dt) {
     socket.emit('move', { x: player.x, y: player.y });
 }
