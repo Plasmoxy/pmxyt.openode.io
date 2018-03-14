@@ -36,25 +36,20 @@ app.get('/', function(req, res) {
 
 let players = [];
 
-class ServerPlayer {
-  constructor(id, x, y) {
-    this.id = id;
-    this.x = 0;
-    this.y = 0;
+class ServerPlayer { // prototype for server player
+  constructor(obj) {
+    this.id = obj.id;
+    this.x = obj.x;
+    this.y = obj.y;
   }
 }
 
-function getAllPlayers(){
-    var players = [];
+function updatePlayers(){ // scan connected sockets and push the connected players to players[]
+    players = [];
     Object.keys(io.sockets.connected).forEach(function(socketID){
         var player = io.sockets.connected[socketID].player;
         if (player) players.push(player);
     });
-    return players;
-}
-
-function updatePlayers() {
-  players = getAllPlayers();
 }
 
 io.sockets.on('connection', function(socket) {
@@ -62,28 +57,28 @@ io.sockets.on('connection', function(socket) {
   console.log('? CLIENT CONNECTED : ' + socket.handshake.address);
 
 
-  socket.on('playerconnected', function(plr) {
+  socket.on('requestplayer', function(plr) { // get ServerPlayer object from client
 
-    let ingame;
-    getAllPlayers().forEach(function(p,i) { // check for existing player
-      if (p && p.id == plr.id) {
-        console.log('? ERROR - player already in game : ' + plr.id);
-        ingame = true;
+    plr = new ServerPlayer(plr); // paranoid recast
+
+    // no need to update players as a new player hasn't been added yet
+
+    for (i=0; i<players.length;i++) { // check for existing player
+      if (players[i] && players[i].id == plr.id) {
+        console.log('? ERROR - player with such name is already in game : ' + plr.id);
+        return; // this breaks out of both for and the function
       }
-    });
-    if (ingame) return;
+    }
 
     console.log('? new player accepted : ' + plr.id);
 
-    socket.player = plr;
+    socket.player = plr; // attach the ServerPlayer object to this connection
+    updatePlayers(); // now a new players has been added so update the players
 
-    socket.broadcast.emit('playerconnected', socket.player) // send info to clients that someone connected <just info ?? >
+    socket.broadcast.emit('playerconnected', plr) // send the new ServerPlayer to other clients
+    socket.emit('allplayers', players) // return all players list to socket
 
-    updatePlayers();
-
-    socket.emit('allplayers', players) // return players list to socket
-
-    console.log('#PLAYERS :: '); console.log(players);
+    console.log('#ALL PLAYERS <ServerPlayer> :: '); console.log(players);
   });
 
 
@@ -91,12 +86,25 @@ io.sockets.on('connection', function(socket) {
     console.log('\n? CLIENT DISCONNECTED : ' + socket.handshake.address + (socket.player ? ' -> player : ' + socket.player.id : ''));
 
     if(socket.player) {
-      io.emit('playerdisconnected', socket.player.id);
+      io.emit('playerdisconnected', socket.player.id); //
       updatePlayers();
     }
   });
 
-  
+  socket.on('move', function(data) {
+    // send data to update client others state
+    socket.broadcast.emit('othermove', {
+      id: socket.player.id,
+      x: data.x,
+      y: data.y
+    });
+
+    // update server data
+
+    socket.player.x = data.x;
+    socket.player.y = data.y;
+
+  });
 
 });
 
